@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head title="JS & HTML messing">
+</head>
+
+
+
+<body">
+	<p id="p_pos">this text will be replaced</p>
+	<p id="p_lclick">this text will be replaced</p>
+	<canvas id="canvas_test" width="400" height="400" style="border:1px solid #000000"></canvas>
+	
+	<script>
+	(function() {
+	var mouseX;
+	var mouseY;
+	var mouseL;
+
+	var activeCanvas = document.getElementById("canvas_test");
+	var canvasTex = activeCanvas.getContext("2d");
+	
+	var canvasRect = activeCanvas.getBoundingClientRect();
+	
+	
+	
+	document.onmousemove = trackMousePos;
+	function trackMousePos(event){
+		mouseX = event.pageX;
+		mouseY = event.pageY;
+			
+		document.getElementById("p_pos").innerHTML = mouseX + ":" + mouseY;
+		if(mouseL){
+			drawCircleAtMouse();
+		}
+	}
+	
+	function trackMouseDown(){
+		mouseL = true;
+		document.getElementById("p_lclick").innerHTML = "down";
+		drawCircleAtMouse();
+	}
+	
+	function trackMouseUp(){
+		mouseL = false;
+		document.getElementById("p_lclick").innerHTML = "up";
+	}
+	
+	function trackMouseClick(){
+		
+	}
+	
+	function drawCircleAtMouse(){
+		var randR = Math.floor(Math.random()*255).toString(16);
+		var randG = Math.floor(Math.random()*255).toString(16);
+		var randB = Math.floor(Math.random()*255).toString(16);
+		
+		canvasTex.strokeStyle = "#" + randR + randG + randB;
+		canvasTex.beginPath();
+		canvasTex.arc(mouseX-canvasRect.left, mouseY-canvasRect.top, 20, 0, 2*Math.PI);
+		canvasTex.stroke();
+	}
+	document.getElementById("canvas_test").addEventListener("mousedown", trackMouseDown);
+	document.getElementById("canvas_test").addEventListener("mouseup", trackMouseUp);
+	document.getElementById("canvas_test").addEventListener("click", trackMouseClick);
+	
+	})();
+	</script>
+</body>
+
+
+
+
+</html>
