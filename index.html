@@ -1,74 +1,127 @@
-<!DOCTYPE html>
 <html>
+<head>
+<script>
 
-<head title="JS & HTML messing">
-</head>
+var mainCanvas;
+var cCon;
 
+var mouseDown = false;
 
+var mouseX;
+var mouseY;
+var canvLeft;
+var canvTop;
 
-<body">
-	<p id="p_pos">this text will be replaced</p>
-	<p id="p_lclick">this text will be replaced</p>
-	<canvas id="canvas_test" width="400" height="400" style="border:1px solid #000000"></canvas>
-	
-	<script>
-	(function() {
-	var mouseX;
-	var mouseY;
-	var mouseL;
+var mouseHoldTimer;
 
-	var activeCanvas = document.getElementById("canvas_test");
-	var canvasTex = activeCanvas.getContext("2d");
+var weightsArray;
+
+function onLoadFunction(){
+	mainCanvas = document.getElementById("canvas_main");
+	cCon = mainCanvas.getContext("2d");
 	
-	var canvasRect = activeCanvas.getBoundingClientRect();
+	var canvasImage = new Image();
+	canvasImage.src = "./images/discworld_1.jpg";
+	canvasImage.onload = function() {
+		//cCon.drawImage(canvasImage, 0, 0);
+	}
 	
+	canvLeft = mainCanvas.getBoundingClientRect().left;
+	canvTop = mainCanvas.getBoundingClientRect().top;
 	
-	
-	document.onmousemove = trackMousePos;
-	function trackMousePos(event){
-		mouseX = event.pageX;
-		mouseY = event.pageY;
-			
-		document.getElementById("p_pos").innerHTML = mouseX + ":" + mouseY;
-		if(mouseL){
-			drawCircleAtMouse();
+	//column 0 array holding row arrays
+	weightsArray = new Array(mainCanvas.height);
+	for(i = 0; i < weightsArray.length; i++){
+		weightsArray[i] = new Array(mainCanvas.width);
+		for(j = 0; j < weightsArray[i].length; j++){
+			weightsArray[i][j] = 0;
 		}
 	}
+	document.getElementById("array_p").innerHTML = parseInt(weightsArray.length) + " by " + parseInt(weightsArray[0].length);
 	
-	function trackMouseDown(){
-		mouseL = true;
-		document.getElementById("p_lclick").innerHTML = "down";
-		drawCircleAtMouse();
+	document.onmousemove = mouseMoveFunction;
+	document.onmousedown = mouseDownFunction;
+	document.onmouseup = mouseUpFunction;
+	document.onmouseleave = mouseUpFunction;
+}
+
+
+function mouseDownFunction(e){
+	mouseDown = true;
+	mouseHoldTimer = setInterval(mouseHoldFunction, 10);
+	document.getElementById("interval_p").innerHTML = "set";
+}
+
+function mouseUpFunction(e){
+	mouseDown = false;
+	if(mouseHoldTimer){
+		clearInterval(mouseHoldTimer);
+		document.getElementById("interval_p").innerHTML = "clear";
+	}
+}
+
+function mouseMoveFunction(e){
+	
+	mouseX = e.pageX-canvLeft;
+	mouseY = e.pageY-canvTop;
+	
+	document.getElementById("debug_p").innerHTML = mouseX + ":" + mouseY;
+	
+}
+
+function mouseHoldFunction(e) {
+	updatePixel(mouseX, mouseY);
+}
+
+function updatePixel(x, y){
+	//update the weights array
+	if(x >= 0 && x < 400 && y >= 0 && y < 400){
+		document.getElementById("inAr_p").innerHTML = x + "---" + y;
+		weightsArray[x][y] += 1;
+	}
+	else{
+		document.getElementById("inAr_p").innerHTML = "nope";
 	}
 	
-	function trackMouseUp(){
-		mouseL = false;
-		document.getElementById("p_lclick").innerHTML = "up";
+	//use fill rect to update the corresponding pixel
+	document.getElementById("adj_test_p").innerHTML = (weightsArray[10][0]);//	 > weightsArray[20][0]);
+	if(weightsArray[x][y] >= 1){
+		cCon.fillStyle = "#000000";
 	}
-	
-	function trackMouseClick(){
-		
+	else{
+		cCon.fillStyle = "#FFFFFF";
 	}
+	cCon.fillRect(x, y, 1, 1);
 	
-	function drawCircleAtMouse(){
-		var randR = Math.floor(Math.random()*255).toString(16);
-		var randG = Math.floor(Math.random()*255).toString(16);
-		var randB = Math.floor(Math.random()*255).toString(16);
-		
-		canvasTex.strokeStyle = "#" + randR + randG + randB;
-		canvasTex.beginPath();
-		canvasTex.arc(mouseX-canvasRect.left, mouseY-canvasRect.top, 20, 0, 2*Math.PI);
-		canvasTex.stroke();
+	//check surrounding pixels
+	if(weightsArray[x-1][y] + 2 < weightsArray[x][y]){
+		updatePixel(x-1, y);
 	}
-	document.getElementById("canvas_test").addEventListener("mousedown", trackMouseDown);
-	document.getElementById("canvas_test").addEventListener("mouseup", trackMouseUp);
-	document.getElementById("canvas_test").addEventListener("click", trackMouseClick);
-	
-	})();
-	</script>
+	if(weightsArray[x+1][y] + 2 < weightsArray[x][y]){
+		updatePixel(x+1, y);
+	}
+	if(weightsArray[x][y-1] + 2 < weightsArray[x][y]){
+		updatePixel(x, y-1);
+	}
+	if(weightsArray[x][y+1] + 2 < weightsArray[x][y]){
+		updatePixel(x, y+1);
+	}
+}
+
+</script>
+</head>
+
+<body onload="onLoadFunction();">
+
+	<p id="debug_p">debug text</p>
+	<p id="interval_p">debug text 2</p>
+	<p id="array_p">debug text 3</p>
+	<p id="inAr_p">debug text 4</p>
+	<p id="adj_test_p">debug 5</p>
+
+<!-- add the canvas with a picture in it -->
+	<canvas id="canvas_main" width="400" height="400" style="border:1px solid #000000">
+	</canvas>
 </body>
 
-
-
-
-</html>
+<html>
