@@ -23,7 +23,7 @@ function onLoadFunction(){
 	var canvasImage = new Image();
 	canvasImage.src = "./images/discworld_1.jpg";
 	canvasImage.onload = function() {
-		//cCon.drawImage(canvasImage, 0, 0);
+		cCon.drawImage(canvasImage, 0, 0);
 	}
 	
 	canvLeft = mainCanvas.getBoundingClientRect().left;
@@ -75,37 +75,52 @@ function mouseHoldFunction(e) {
 
 function updatePixel(x, y){
 	//update the weights array
-	if(x >= 0 && x < 400 && y >= 0 && y < 400){
+	if(x >= 1 && x < 399 && y >= 0 && y < 400){
 		document.getElementById("inAr_p").innerHTML = x + "---" + y;
-		weightsArray[x][y] += 1;
+		
+		if(weightsArray[x][y] == 0){
+			weightsArray[x][y] = 2;
+		}
+		else if(weightsArray[x][y] > 255){
+			weightsArray[x][y] = 255;
+		}
+		else{
+			
+			weightsArray[x][y] += 2;
+		}
+		
+		//use fill rect to update the corresponding pixel
+		if(weightsArray[x][y] > 0){
+			
+			var col = (256-weightsArray[x][y]).toString(16);
+			if(col.length < 2){
+				col = "0" + col;
+			}
+		
+			cCon.fillStyle = "#" + col + col + col;
+		
+			document.getElementById("adj_test_p").innerHTML = cCon.fillStyle;
+			cCon.fillRect(x, y, 1, 1);
+			
+			//check surrounding pixels
+			if(weightsArray[x-1][y] + 3 < weightsArray[x][y]){
+				updatePixel(x-1, y);
+			}
+			if(weightsArray[x+1][y] + 3 < weightsArray[x][y]){
+				updatePixel(x+1, y);
+			}
+			if(weightsArray[x][y-1] + 3 < weightsArray[x][y]){
+				updatePixel(x, y-1);
+			}
+			if(weightsArray[x][y+1] + 3 < weightsArray[x][y]){
+				updatePixel(x, y+1);
+			}
+		}
 	}
 	else{
 		document.getElementById("inAr_p").innerHTML = "nope";
 	}
 	
-	//use fill rect to update the corresponding pixel
-	document.getElementById("adj_test_p").innerHTML = (weightsArray[10][0]);//	 > weightsArray[20][0]);
-	if(weightsArray[x][y] >= 1){
-		cCon.fillStyle = "#000000";
-	}
-	else{
-		cCon.fillStyle = "#FFFFFF";
-	}
-	cCon.fillRect(x, y, 1, 1);
-	
-	//check surrounding pixels
-	if(weightsArray[x-1][y] + 2 < weightsArray[x][y]){
-		updatePixel(x-1, y);
-	}
-	if(weightsArray[x+1][y] + 2 < weightsArray[x][y]){
-		updatePixel(x+1, y);
-	}
-	if(weightsArray[x][y-1] + 2 < weightsArray[x][y]){
-		updatePixel(x, y-1);
-	}
-	if(weightsArray[x][y+1] + 2 < weightsArray[x][y]){
-		updatePixel(x, y+1);
-	}
 }
 
 </script>
