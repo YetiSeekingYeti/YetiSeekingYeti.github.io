@@ -1,142 +1,290 @@
 <html>
+
 <head>
+<title>flies</title>
+
 <script>
-
-var mainCanvas;
-var cCon;
-
-var mouseDown = false;
-
-var mouseX;
-var mouseY;
-var canvLeft;
-var canvTop;
-
-var mouseHoldTimer;
-
-var weightsArray;
-
-function onLoadFunction(){
-	mainCanvas = document.getElementById("canvas_main");
-	cCon = mainCanvas.getContext("2d");
+	//define "global" variables
+	var svgNS = "http://www.w3.org/2000/svg"; // should really resarch what this is...
 	
-	var canvasImage = new Image();
-	canvasImage.src = "./images/discworld_1.jpg";
-	canvasImage.onload = function() {
-		cCon.drawImage(canvasImage, 0, 0);
-	}
+	var debugP;
+	var debugMode = false;
 	
-	canvLeft = mainCanvas.getBoundingClientRect().left;
-	canvTop = mainCanvas.getBoundingClientRect().top;
+	var mainSVG;
+	var svgTop, svgLeft;
+	var svgH, svgW;
 	
-	//column 0 array holding row arrays
-	weightsArray = new Array(mainCanvas.height);
-	for(i = 0; i < weightsArray.length; i++){
-		weightsArray[i] = new Array(mainCanvas.width);
-		for(j = 0; j < weightsArray[i].length; j++){
-			weightsArray[i][j] = 0;
-		}
-	}
-	document.getElementById("array_p").innerHTML = parseInt(weightsArray.length) + " by " + parseInt(weightsArray[0].length);
+	var fps = 30;
 	
-	document.onmousemove = mouseMoveFunction;
-	document.onmousedown = mouseDownFunction;
-	document.onmouseup = mouseUpFunction;
-	document.onmouseleave = mouseUpFunction;
-}
-
-
-function mouseDownFunction(e){
-	mouseDown = true;
-	mouseHoldTimer = setInterval(mouseHoldFunction, 10);
-	document.getElementById("interval_p").innerHTML = "set";
-}
-
-function mouseUpFunction(e){
-	mouseDown = false;
-	if(mouseHoldTimer){
-		clearInterval(mouseHoldTimer);
-		document.getElementById("interval_p").innerHTML = "clear";
-	}
-}
-
-function mouseMoveFunction(e){
+	var mouseX = 0;
+	var mouseY = 0;
+	var mouseDown = false;
 	
-	mouseX = e.pageX-canvLeft;
-	mouseY = e.pageY-canvTop;
+	var swatter;
+	var swatX, swatY;
+	var swatHalfH, swatHalfW;
+	var swatDown;
 	
-	document.getElementById("debug_p").innerHTML = mouseX + ":" + mouseY;
+	var swatW = 40;
+	var swatH = 40;
+	var swatDownW = 36;
+	var swatDownH = 36;
 	
-}
-
-function mouseHoldFunction(e) {
-	updatePixel(mouseX, mouseY);
-}
-
-function updatePixel(x, y){
-	//update the weights array
-	if(x >= 1 && x < 399 && y >= 0 && y < 400){
-		document.getElementById("inAr_p").innerHTML = x + "---" + y;
+	var flyList;
+	var flySpawnTimer = 12;
+	var flySpawnTime = flySpawnTimer;
+	
+	// triggers on page load
+	function setup(){
+		// set variables that aren't going to change
+		debugP = document.getElementById("debug_p");
 		
-		if(weightsArray[x][y] == 0){
-			weightsArray[x][y] = 2;
+		mainSVG = document.getElementById("svg_main");
+		svgW = parseInt(mainSVG.getAttribute("width"));
+		svgH = parseInt(mainSVG.getAttribute("height"));
+		var svgRect = mainSVG.getBoundingClientRect();
+		svgTop = svgRect.top;
+		svgLeft = svgRect.left;
+		
+		writeDebug(svgH + ";" + svgW);
+		
+		swatter = document.getElementById("rect_swatter");
+		swatHalfH = Math.floor(swatH/2);
+		swatHalfW = Math.floor(swatW/2);
+		
+		// set swatter properties
+		swatter.setAttributeNS(null, "height", swatH);
+		swatter.setAttributeNS(null, "width", swatW);
+		
+		// I wish I had OOP...
+		flyList = new Array();
+		
+		// start the main game loop
+		var mspf = Math.floor(1/fps * 100);
+		setInterval(update, mspf);
+		
+	}
+	
+	
+	// triggers once per fps
+	function update(){
+		// move the swatter with the mouse
+		swatX = mouseX;
+		swatY = mouseY;
+				
+		swatter.setAttributeNS(null, "x", swatX - swatHalfW);
+		swatter.setAttributeNS(null, "y", swatY - swatHalfH);
+		
+		// spawn flies on a cycle (up to a maximum)
+		if(flyList.length < 50){
+			flySpawnTime--;
+			if(flySpawnTime <= 0){
+				var flySpot = getRandomInsidePoint();
+				makeFly(flySpot[0], flySpot[1]);
+				flySpawnTime = flySpawnTimer;
+			}
 		}
-		else if(weightsArray[x][y] > 255){
-			weightsArray[x][y] = 255;
+		
+		// trigger their little fly brains
+		for(i = 0; i < flyList.length; i++){
+			flyAI(flyList[i]);
+		}
+	}
+	
+	
+	// swat or un-swat on click
+	function swat(down) {
+		// only bother if the new state doesn't match the current state
+		if(down != swatDown) {
+			// change the swatter properties
+			var curH = down ? swatDownH : swatH;
+			var curW = down ? swatDownW : swatW;
+			
+			swatter.setAttributeNS(null, "height", curH);
+			swatter.setAttributeNS(null, "width", curW);
+			// update the half-height&width for mouse tracking
+			swatHalfH = Math.floor(curH/2);
+			swatHalfW =  Math.floor(curW/2);
+			
+			// swat flies
+			if(down){
+				// I really don't want to have to traverse the array like this
+				for(i = 0; i < flyList.length; i++){
+					var fx = flyList[i].getAttributeNS(null, "cx");
+					var fy = flyList[i].getAttributeNS(null, "cy");
+					var swatLeft = swatX - Math.floor(swatW/2);
+					var swatRight = swatX + Math.floor(swatW/2);
+					var swatTop = swatY - Math.floor(swatH/2);
+					var swatBottom = swatY + Math.floor(swatH/2);
+					
+					if(fx >= swatLeft && fx <= swatRight && fy >= swatTop && fy <= swatBottom){
+						getSwatted(flyList[i]);
+					}
+				}
+			}
+		}
+	}
+	
+	
+	
+	// functions to manage flies (my kingdom for OOP)
+	// create a fly at a point
+	function makeFly(x, y){
+		var newFly = document.createElementNS(svgNS, "circle");
+		newFly.setAttributeNS(null, "r", 2);
+		newFly.setAttributeNS(null, "fill", "black");
+		newFly.setAttributeNS(null, "cx", x);
+		newFly.setAttributeNS(null, "cy", y);
+		newFly.setAttributeNS(null, "alive", 1);
+		flyList.push(newFly);
+		mainSVG.appendChild(newFly);
+		
+	}
+	
+	
+	
+	
+	// triggers once per frame per fly
+	function flyAI(fly){
+		var flyX = fly.getAttributeNS(null, "cx");
+		var flyY = fly.getAttributeNS(null, "cy");
+		
+		if(fly.getAttributeNS(null, "alive") == 1){
+		
+			
+			var vert = false;
+			
+			// choose a direction
+			var dir = Math.random();
+			if(dir < 0.25){
+				flyX--;
+			}
+			else if(dir < 0.5){
+				flyX++;
+			}
+			else if(dir < 0.75){
+				flyY--;
+				vert = true;
+			}
+			else{
+				flyY++;
+				vert = true;
+			}
+			
+			
+			
+			if(checkInsideSvg(flyX, flyY)){
+				//if(vert){
+					fly.setAttributeNS(null, "cy", flyY);
+				//}
+				//else{
+					fly.setAttributeNS(null, "cx", flyX);
+				//}
+			}
 		}
 		else{
-			
-			weightsArray[x][y] += 2;
-		}
-		
-		//use fill rect to update the corresponding pixel
-		if(weightsArray[x][y] > 0){
-			
-			var col = (256-weightsArray[x][y]).toString(16);
-			if(col.length < 2){
-				col = "0" + col;
+			// just fall down
+			flyY++;
+			//flyY = Math.parseInt(fly.getAttributeNS(null, "cy")) + 1;
+			if(checkInsideSvg(flyX, flyY)){
+				fly.setAttributeNS(null, "cy", flyY);
+				fly.setAttributeNS(null, "cx", flyX);
 			}
-		
-			cCon.fillStyle = "#" + col + col + col;
-		
-			document.getElementById("adj_test_p").innerHTML = cCon.fillStyle;
-			cCon.fillRect(x, y, 1, 1);
-			
-			//check surrounding pixels
-			if(weightsArray[x-1][y] + 3 < weightsArray[x][y]){
-				updatePixel(x-1, y);
-			}
-			if(weightsArray[x+1][y] + 3 < weightsArray[x][y]){
-				updatePixel(x+1, y);
-			}
-			if(weightsArray[x][y-1] + 3 < weightsArray[x][y]){
-				updatePixel(x, y-1);
-			}
-			if(weightsArray[x][y+1] + 3 < weightsArray[x][y]){
-				updatePixel(x, y+1);
+			else{
+				// remove it from the list so AI doesn't trigger
+				var flyIndex = flyList.indexOf(fly);
+				flyList.splice(flyIndex, 1);
 			}
 		}
-	}
-	else{
-		document.getElementById("inAr_p").innerHTML = "nope";
 	}
 	
-}
-
+	
+	// triggered when the fly is hit
+	function getSwatted(fly){
+		fly.setAttributeNS(null, "alive", 0);
+	}
+	
+	
+	
+	// functions to track input
+	// track mouse pos
+	function trackMouse(e){
+		mouseX = e.pageX-svgLeft;
+		mouseY = e.pageY-svgTop;
+	}
+	// track mouse button
+	function trackMouseDown(){
+		mouseDown = true;
+		swat(true);
+	}
+	function trackMouseUp(){
+		mouseDown = false;
+		swat(false);
+	}
+	
+	
+	
+	// utility functions
+	function writeDebug(content){
+		if(debugMode){
+			debugP.innerHTML = content;
+		}
+	}
+	
+	// get a random point around the SVG edge
+	function getRandomEdgePoint(){
+		var tx, ty;
+		if(Math.random() > 0.5){
+			// walls
+			tx = (Math.random() > 0.5) ? 0 : svgW;
+			ty = Math.floor(Math.random() * svgH);
+		}
+		else{
+			// floor/ceiling
+			ty = (Math.random() > 0.5) ? 0 : svgH;
+			tx = Math.floor(Math.random() * svgW);
+		}
+		return [tx, ty];
+	}
+	
+	// get a random point within the svg
+	function getRandomInsidePoint(){
+		var tx, ty;
+		tx = Math.floor(Math.random() * svgW);
+		ty = Math.floor(Math.random() * svgH);
+		return [tx, ty];
+	}
+	
+	// check if a point is in the svg
+	function checkInsideSvg(x, y){
+	
+		return (x >= 0 && x <= svgW && y >= 0 && y <= svgH);
+	
+	}
+	
+	
+	
+	// set the document functions
+	document.onmousemove = trackMouse;
+	document.onmousedown = trackMouseDown;
+	document.onmouseup = trackMouseUp;
+	
 </script>
 </head>
 
-<body onload="onLoadFunction();">
 
-	<p id="debug_p">debug text</p>
-	<p id="interval_p">debug text 2</p>
-	<p id="array_p">debug text 3</p>
-	<p id="inAr_p">debug text 4</p>
-	<p id="adj_test_p">debug 5</p>
 
-<!-- add the canvas with a picture in it -->
-	<canvas id="canvas_main" width="400" height="400" style="border:1px solid #000000">
-	</canvas>
+
+<body onload="setup();">
+
+<svg id="svg_main" height="600" width="600" style="outline:solid #000000;">
+	<rect id="rect_swatter" width="30" height="30" x="100" y="100"
+			style="fill:rgb(200,0,150);stroke-width:1;stroke:rgb(0,0,0);">
+	</rect>
+</svg>
+
+
+<p id="debug_p"></p>
+
 </body>
-
-<html>
+</html>
