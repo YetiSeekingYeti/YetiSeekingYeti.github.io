@@ -39,6 +39,8 @@
 	var flySpawnTimer = 12;
 	var flySpawnTime = flySpawnTimer;
 	
+	var teddyMode = false;
+	
 	// triggers on page load
 	function setup(){
 		// set variables that aren't going to change
@@ -228,9 +230,22 @@
 		mouseX = e.pageX-svgLeft;
 		mouseY = e.pageY-svgTop;
 		
-		//debug show the colour of the underlying pixel on the canvas
-		//console.log(checkClear(mouseX, mouseY));
 		
+		if(teddyMode){
+			
+			// shake
+			var rx = Math.floor(Math.random() * 10) - 5;
+			var ry = Math.floor(Math.random() * 10) - 5;
+			mouseX += rx;
+			mouseY += ry;
+			
+			// bake
+			swatter.style.fill = randomColour();
+			
+			if(mouseDown){
+				swat(true);
+			}
+		}
 	}
 	// track mouse button
 	function trackMouseDown(){
@@ -240,6 +255,23 @@
 	function trackMouseUp(){
 		mouseDown = false;
 		swat(false);
+	}
+	
+	// track super secret keyboard inputs
+	function trackKeyPress(e){
+		console.log(e.key);
+		if(e.key == 't'){
+			swatW = 200;
+			swatH = 200;
+			swat(false);
+			//swatter.setAttributeNS(null, "width", swatW);
+			//swatter.setAttributeNS(null, "height", swatH);
+			//swatter.setAttributeNS(null, "fill", "#000000");
+			swatter.style.fill = "#000000";
+			swatDownW = 190;
+			swatDownH = 190;
+			teddyMode = true;
+		}
 	}
 	
 	
@@ -287,11 +319,25 @@
 		return checkInsideSvg(x, y) && checkCanvasClear(x, y);
 	}
 	
+	// get a random colour's hex code
+	function randomColour(){
+		var col = "#";
+		for(i = 0; i < 3; i++){
+			var chan = Math.floor(Math.random() * 255).toString(16);
+			if(chan.length < 2){
+				chan = "0" + r;
+			}
+			col += chan;
+		}
+		return col;
+	}
+	
 	
 	// set the document functions
 	document.onmousemove = trackMouse;
 	document.onmousedown = trackMouseDown;
 	document.onmouseup = trackMouseUp;
+	document.onkeypress = trackKeyPress;
 	
 </script>
 </head>
