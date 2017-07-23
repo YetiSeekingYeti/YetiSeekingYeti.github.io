@@ -14,6 +14,9 @@
 	var svgTop, svgLeft;
 	var svgH, svgW;
 	
+	var mainCanvas;
+	var cCon;
+	
 	var fps = 30;
 	
 	var mouseX = 0;
@@ -25,12 +28,14 @@
 	var swatHalfH, swatHalfW;
 	var swatDown;
 	
-	var swatW = 40;
-	var swatH = 40;
-	var swatDownW = 36;
-	var swatDownH = 36;
+	var swatW = 100;
+	var swatH = 100;
+	var swatDownW = 80;//36;
+	var swatDownH = 80;//36;
 	
 	var flyList;
+	var maxFlies = 50;
+	var flyR = 3;
 	var flySpawnTimer = 12;
 	var flySpawnTime = flySpawnTimer;
 	
@@ -46,7 +51,8 @@
 		svgTop = svgRect.top;
 		svgLeft = svgRect.left;
 		
-		writeDebug(svgH + ";" + svgW);
+		mainCanvas = document.getElementById("canvas_main");
+		cCon = mainCanvas.getContext("2d");
 		
 		swatter = document.getElementById("rect_swatter");
 		swatHalfH = Math.floor(swatH/2);
@@ -63,6 +69,7 @@
 		var mspf = Math.floor(1/fps * 100);
 		setInterval(update, mspf);
 		
+		
 	}
 	
 	
@@ -76,12 +83,14 @@
 		swatter.setAttributeNS(null, "y", swatY - swatHalfH);
 		
 		// spawn flies on a cycle (up to a maximum)
-		if(flyList.length < 50){
+		if(flyList.length < maxFlies) {
 			flySpawnTime--;
 			if(flySpawnTime <= 0){
 				var flySpot = getRandomInsidePoint();
-				makeFly(flySpot[0], flySpot[1]);
-				flySpawnTime = flySpawnTimer;
+				if(checkClear(flySpot[0], flySpot[1])){
+					makeFly(flySpot[0], flySpot[1]);
+					flySpawnTime = flySpawnTimer;
+				}
 			}
 		}
 		
@@ -131,7 +140,7 @@
 	// create a fly at a point
 	function makeFly(x, y){
 		var newFly = document.createElementNS(svgNS, "circle");
-		newFly.setAttributeNS(null, "r", 2);
+		newFly.setAttributeNS(null, "r", flyR);
 		newFly.setAttributeNS(null, "fill", "black");
 		newFly.setAttributeNS(null, "cx", x);
 		newFly.setAttributeNS(null, "cy", y);
@@ -173,7 +182,7 @@
 			
 			
 			
-			if(checkInsideSvg(flyX, flyY)){
+			if(checkClear(flyX, flyY)){
 				//if(vert){
 					fly.setAttributeNS(null, "cy", flyY);
 				//}
@@ -186,7 +195,7 @@
 			// just fall down
 			flyY++;
 			//flyY = Math.parseInt(fly.getAttributeNS(null, "cy")) + 1;
-			if(checkInsideSvg(flyX, flyY)){
+			if(checkClear(flyX, flyY)){
 				fly.setAttributeNS(null, "cy", flyY);
 				fly.setAttributeNS(null, "cx", flyX);
 			}
@@ -194,6 +203,13 @@
 				// remove it from the list so AI doesn't trigger
 				var flyIndex = flyList.indexOf(fly);
 				flyList.splice(flyIndex, 1);
+				// draw it on the bg canvas
+				cCon.fillStyle="#000000";
+				cCon.beginPath();
+				cCon.arc(flyX, flyY, flyR, 0, 2*Math.PI);
+				cCon.fill();
+				// remove it from the page entirely
+				mainSVG.removeChild(fly);
 			}
 		}
 	}
@@ -211,6 +227,10 @@
 	function trackMouse(e){
 		mouseX = e.pageX-svgLeft;
 		mouseY = e.pageY-svgTop;
+		
+		//debug show the colour of the underlying pixel on the canvas
+		//console.log(checkClear(mouseX, mouseY));
+		
 	}
 	// track mouse button
 	function trackMouseDown(){
@@ -225,11 +245,6 @@
 	
 	
 	// utility functions
-	function writeDebug(content){
-		if(debugMode){
-			debugP.innerHTML = content;
-		}
-	}
 	
 	// get a random point around the SVG edge
 	function getRandomEdgePoint(){
@@ -257,11 +272,20 @@
 	
 	// check if a point is in the svg
 	function checkInsideSvg(x, y){
-	
 		return (x >= 0 && x <= svgW && y >= 0 && y <= svgH);
-	
 	}
 	
+	// check if the pixel is white on the canvas
+	function checkCanvasClear(x, y){
+		var p = cCon.getImageData(x, y, 1, 1).data;
+		return (p[3] == 0);
+		
+	}
+	
+	// check collisions (canvas && svg)
+	function checkClear(x, y){
+		return checkInsideSvg(x, y) && checkCanvasClear(x, y);
+	}
 	
 	
 	// set the document functions
@@ -277,11 +301,16 @@
 
 <body onload="setup();">
 
-<svg id="svg_main" height="600" width="600" style="outline:solid #000000;">
+<canvas id="canvas_main" height="600" width="600"
+		style="outline:dotted #007788;position:absolute;top:10;left:10">
+</canvas>
+<svg id="svg_main" height="600" width="600"
+		style="outline:double #AA0033;position:absolute;top:10;left:10;">
 	<rect id="rect_swatter" width="30" height="30" x="100" y="100"
 			style="fill:rgb(200,0,150);stroke-width:1;stroke:rgb(0,0,0);">
 	</rect>
 </svg>
+
 
 
 <p id="debug_p"></p>
