@@ -1,0 +1,102 @@
+<html>
+
+<head>
+<title>Curse of the Recursive Purses</title>
+
+<script>
+
+var currentGrid;
+var gridHolder;
+var gridTable;
+
+// triggered on page load
+function start(){
+	gridHolder = document.getElementById("grid_goes_here");
+	
+	// make the grid (array)
+	currentGrid = new Array(5);
+	for(i = 0; i < currentGrid.length; i++){
+		currentGrid[i] = new Array(5);
+	}
+	
+	//randomly fill the grid
+	for(i = 0; i < currentGrid.length; i++){
+		for(j = 0; j < currentGrid[i].length; j++){
+			currentGrid[i][j] = i+j;//Math.floor(Math.random() * 10);
+		}
+	}
+	
+	// clear space for the table
+	gridHolder.innerHTML = "";
+	
+	// make and add the table to the page
+	gridTable = document.createElement("table");
+	gridTable.style.width = "400";
+	gridTable.style.height = "400";
+	gridTable.style.border = "solid #000000";
+	gridTable.style.borderCollapse = "collapse";
+	for(i = 0; i < currentGrid.length; i++){
+		var row = gridTable.insertRow();
+		for(j = 0; j < currentGrid.length; j++){
+			var cell = row.insertCell();
+			cell.style.border = "solid #000000";
+		}
+	}
+	gridHolder.appendChild(gridTable);
+	
+	// populate the table from the grid
+	redrawTable(gridTable, currentGrid);
+	console.log("finished");
+	
+	
+	
+	
+	
+	// start the main game loop
+	setInterval(update, 1000);
+}
+
+
+// triggered once per "frame"
+function update(){
+	// randomize table contents
+	for(i = 0; i < currentGrid.length; i++){
+		for(j = 0; j < currentGrid[i].length; j++){
+			currentGrid[i][j] = Math.floor(Math.random() * 10);
+		}
+	}
+	
+	// redraw the table
+	redrawTable(gridTable, currentGrid);
+}
+
+
+function redrawTable(tbl, arr){
+	console.log("drawing");
+	for(i = 0; i < arr.length; i++){
+		for(j = 0; j < arr.length; j++){
+			tbl.rows[i].cells[j].innerHTML = arr[i][j];
+		}
+	}
+}
+
+
+
+</script>
+
+</head>
+
+
+
+
+
+
+
+<body onload="start();">
+<p id="test">test</p>
+
+<div id="grid_goes_here"></div>
+
+</body>
+
+</html>
