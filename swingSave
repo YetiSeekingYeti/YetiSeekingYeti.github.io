@@ -6,7 +6,10 @@
     <body>
 
         <?php
-            $highScore = 100;
+            if( $_GET["whatiwant"]) {
+                echo 100;
+                exit();
+            }
         ?>
 
     </body>
