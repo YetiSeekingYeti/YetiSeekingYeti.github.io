@@ -1,1 +1,13 @@
-100
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Example</title>
+    </head>
+    <body>
+
+        <?php
+            $highScore = 100;
+        ?>
+
+    </body>
+</html>
